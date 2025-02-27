@@ -55,7 +55,7 @@ exports.handler = async (event) => {
   }
 
   // 4) Setze den Token als Cookie statt ihn an die URL anzuhängen
-  const cookie = `token=${tokenData.access_token}; Domain=.420pharma.de; Path=/; Secure; SameSite=Lax`;
+  const cookie = `token=${tokenData.access_token}; Domain=.420pharma.de; Path=/; HttpOnly; Secure; SameSite=Lax`;
 
   // 5) Weiterleitung
   return {
