@@ -12,7 +12,7 @@ exports.handler = async (event) => {
 
   const client_id = process.env.CLIENT_ID;
   const client_secret = process.env.CLIENT_SECRET;
-  const redirect_uri = 'https://420pharma.netlify.app/.netlify/functions/oauth';
+  const redirect_uri = 'https://login.420pharma.de/.netlify/functions/oauth';
 
   // 1) Tausche den code gegen einen Access Token
   const tokenResponse = await fetch('https://login.doccheck.com/service/oauth/access_token/', {
@@ -55,7 +55,7 @@ exports.handler = async (event) => {
   }
 
   // 4) Setze den Token als Cookie statt ihn an die URL anzuhängen
-  const cookie = `token=${tokenData.access_token}; Path=/; HttpOnly; Secure; SameSite=Lax`;
+  const cookie = `token=${tokenData.access_token}; Domain=.420pharma.de; Path=/; HttpOnly; Secure; SameSite=Lax`;
 
   // 5) Weiterleitung
   return {
