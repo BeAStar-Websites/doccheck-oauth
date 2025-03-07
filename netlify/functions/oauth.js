@@ -1,8 +1,10 @@
+// netlify/functions/oauth.js
 const fetch = require('node-fetch');
 
 exports.handler = async (event) => {
   const { code, state } = event.queryStringParameters || {};
 
+  // 1) Prüfen, ob "code" vorhanden
   if (!code) {
     return {
       statusCode: 400,
@@ -10,11 +12,13 @@ exports.handler = async (event) => {
     };
   }
 
-  const client_id = process.env.CLIENT_ID;
+  // 2) Environment-Variablen lesen
+  const client_id = process.env.CLIENT_ID;     // z.B. '2000000021573'
   const client_secret = process.env.CLIENT_SECRET;
-  const redirect_uri = 'https://login.420pharma.de/.netlify/functions/oauth';
+  const redirect_uri = 'https://login.420pharma.de/.netlify/functions/oauth'; 
+  // Stelle sicher, dass diese URL auch in CReaM als "Ziel-URL" hinterlegt ist.
 
-  // 1) Tausche den code gegen einen Access Token
+  // 3) Code gegen Access Token tauschen
   const tokenResponse = await fetch('https://login.doccheck.com/service/oauth/access_token/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -26,8 +30,8 @@ exports.handler = async (event) => {
       client_secret,
     }),
   });
-  const tokenData = await tokenResponse.json();
 
+  const tokenData = await tokenResponse.json();
   if (tokenData.error) {
     return {
       statusCode: 400,
@@ -35,34 +39,22 @@ exports.handler = async (event) => {
     };
   }
 
-  // 2) (Optional) Userinfo abrufen, falls du zusätzliche Infos brauchst
-  //    Hier nur, wenn du noch das Profil abfragen willst.
-  /*
-  const userInfoResponse = await fetch('https://login.doccheck.com/service/oauth/user_data/v2/', {
-    headers: { Authorization: `Bearer ${tokenData.access_token}` },
-  });
-  const userInfo = await userInfoResponse.json();
-  */
-
-  // 3) Bestimme das Ziel (based on "state" or fallback)
-  let redirectUrl;
+  // 4) Bestimme Weiterleitungs-URL (falls "state" vorhanden, hänge es an)
+  // z.B. state="/fachbereich/arzt"
+  let redirectUrl = 'https://www.420pharma.de/fachbereich'; // Fallback
   if (state && state.trim() !== '') {
-    // z.B. state="/fachbereich/arzt"
     redirectUrl = `https://www.420pharma.de${state}`;
-  } else {
-    // Standard: "/fachbereich"
-    redirectUrl = 'https://www.420pharma.de/fachbereich';
   }
 
-  // 4) Setze den Token als Cookie statt ihn an die URL anzuhängen
-  const cookie = `token=${tokenData.access_token}; Domain=.420pharma.de; Path=/; HttpOnly; Secure; SameSite=None`;
+  // 5) Hänge Access Token an URL-Parameter an
+  // (Statt es in einem Cookie zu speichern)
+  const finalRedirect = `${redirectUrl}?token=${tokenData.access_token}`;
 
-  // 5) Weiterleitung
+  // 6) 302-Redirect an die finale Seite
   return {
     statusCode: 302,
     headers: {
-      'Set-Cookie': cookie,
-      Location: redirectUrl,
+      Location: finalRedirect,
     },
   };
 };
