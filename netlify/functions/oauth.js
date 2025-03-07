@@ -9,8 +9,8 @@ exports.handler = async (event) => {
     };
   }
 
-  const client_id = process.env.CLIENT_ID;
-  const client_secret = process.env.CLIENT_SECRET;
+  const client_id = process.env.DOCCHECK_CLIENT_ID;
+  const client_secret = process.env.DOCCHECK_CLIENT_SECRET;
   const redirect_uri = 'https://login.420pharma.de/.netlify/functions/oauth';  // Diese URL muss in DocCheck CReaM als Ziel-URL eingetragen sein.
 
   const tokenResponse = await fetch('https://login.doccheck.com/service/oauth/access_token/', {
