@@ -1,10 +1,7 @@
-// netlify/functions/oauth.js
 const fetch = require('node-fetch');
 
 exports.handler = async (event) => {
   const { code, state } = event.queryStringParameters || {};
-
-  // 1) Prüfen, ob "code" vorhanden
   if (!code) {
     return {
       statusCode: 400,
@@ -12,13 +9,10 @@ exports.handler = async (event) => {
     };
   }
 
-  // 2) Environment-Variablen lesen
-  const client_id = process.env.CLIENT_ID;     // z.B. '2000000021573'
+  const client_id = process.env.CLIENT_ID;
   const client_secret = process.env.CLIENT_SECRET;
-  const redirect_uri = 'https://login.420pharma.de/.netlify/functions/oauth'; 
-  // Stelle sicher, dass diese URL auch in CReaM als "Ziel-URL" hinterlegt ist.
+  const redirect_uri = 'https://login.420pharma.de/.netlify/functions/oauth';  // Diese URL muss in DocCheck CReaM als Ziel-URL eingetragen sein.
 
-  // 3) Code gegen Access Token tauschen
   const tokenResponse = await fetch('https://login.doccheck.com/service/oauth/access_token/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -30,7 +24,6 @@ exports.handler = async (event) => {
       client_secret,
     }),
   });
-
   const tokenData = await tokenResponse.json();
   if (tokenData.error) {
     return {
@@ -38,19 +31,16 @@ exports.handler = async (event) => {
       body: JSON.stringify({ error: tokenData.error_description }),
     };
   }
-
-  // 4) Bestimme Weiterleitungs-URL (falls "state" vorhanden, hänge es an)
-  // z.B. state="/fachbereich/arzt"
-  let redirectUrl = 'https://www.420pharma.de/fachbereich'; // Fallback
+  
+  // Bestimme das Ziel basierend auf "state" oder als Standard
+  let redirectUrl = 'https://www.420pharma.de/fachbereich';
   if (state && state.trim() !== '') {
     redirectUrl = `https://www.420pharma.de${state}`;
   }
-
-  // 5) Hänge Access Token an URL-Parameter an
-  // (Statt es in einem Cookie zu speichern)
+  
+  // Hänge den Access Token als URL-Parameter an
   const finalRedirect = `${redirectUrl}?token=${tokenData.access_token}`;
-
-  // 6) 302-Redirect an die finale Seite
+  
   return {
     statusCode: 302,
     headers: {
