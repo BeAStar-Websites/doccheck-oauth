@@ -1,16 +1,31 @@
-exports.handler = async (event, context) => {
-  const cookieHeader = event.headers.cookie || '';
-  // Überprüfe, ob der "token" Cookie existiert
-  const isValid = cookieHeader.includes('token=');
-  
-  return {
-    statusCode: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "https://www.420pharma.de", // muss exakt übereinstimmen
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Credentials": "true", // wichtig für Credentials
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ valid: isValid }),
-  };
+// netlify/functions/validate-token.js
+const fetch = require('node-fetch');
+
+exports.handler = async (event) => {
+  // Lese den Token aus dem Query-Parameter oder dem Request-Body
+  const { token } = event.queryStringParameters || {};
+  if (!token) {
+    return { statusCode: 200, body: JSON.stringify({ valid: false }) };
+  }
+
+  // An DocCheck Validate-Endpunkt schicken
+  try {
+    const validateResponse = await fetch('https://login.doccheck.com/service/oauth/access_token/checkToken.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Bearer ${token}`
+      },
+    });
+    const validateData = await validateResponse.json();
+    // Laut Doku: boolIsValid=true => Token ungültig, boolIsValid=false => Token gültig
+    const isValid = (validateData.boolIsValid === false);
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ valid: isValid }),
+    };
+  } catch (err) {
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+  }
 };
